@@ -1,9 +1,9 @@
 use Test;
 BEGIN { plan tests => 6 };
 
-use Net::YahooMessenger::CRAM;
+use Net::YMSG::CRAM;
 ok(1);
-my $cram = Net::YahooMessenger::CRAM->new;
+my $cram = Net::YMSG::CRAM->new;
 ok(defined $cram);
 $cram->set_challenge_string('aiueo0kakikukeko1sasis--');
 $cram->set_id('hello');

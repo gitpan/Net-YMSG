@@ -1,6 +1,7 @@
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
+    'AUTHOR'  => 'Varun kacholia ( varunk@cse.iitb.ac.in)',
     'NAME'		=> 'Net::YMSG',
     'VERSION_FROM'	=> 'YMSG.pm',
     'PREREQ_PM'		=> {
