@@ -1,0 +1,28 @@
+Yahoo ChatRooms + Instant Messenger
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Requirements:
+~~~~~~~~~~~~
+*	perl 5.6.0 or higher 
+
+Installation :
+~~~~~~~~~~~~
+@~> make
+@~> make install
+
+Features:
+~~~~~~~~
+* yahoo IM
+* All Chat rooms supported
+
+Vote of Thanks :
+~~~~~~~~~~~~~~
+*	venky for helping in decoding the yahoo protocol
+* 	hiroyuki for YMSG IM base. 
+
+Author :
+~~~~~~
+Varun Kacholia
+
+Note: Currently you will be logged in Linux room(by default) , You can change it by changing the $chatroom and $chatroomid in the executable "yahoo";
+Refer to www.cse.iitb.ac.in/~varunk/YahooProtocol.htm for chatroom names and id.
+
