@@ -204,7 +204,7 @@ use constant STATUS_MESSAGE => [
 'Stepped Out',
 ];
 
-
+my $first=0;
 sub UnImplementEvent
 {
 	 my $self = shift;
@@ -323,19 +323,34 @@ sub ReceiveMessage
 {
 	 my $self = shift;
 	 my $event = shift;
-	 my $from = $event->from;
-	 my $body = $event->body;
-	# print "body $body from $from\n";
-	 if ($body ne "") {
-		  $body =~ s{</?(?:font|FACE).+?>}{}g;
-		  if( ! defined $nametonum{"$from"} ) {
-			   $nametonum{"$from"} = $count;
-			   $numtoname{"$count"}=$from;
-			   $count++;
+	 my @from = split("\x80",$event->from);
+	 my @body = split("\x80",$event->body);
+	 my $i;
+	 if($first==0 && $#from >= 1) {
+#might be offline messages 
+		  print "[05;31mYour Offline messages :\n[They have been saved in the file \'offline\' in the current directory]\n[0m";
+		  open(OFFLINE,">>offline") || printf "Error opening file offline";
+		  for($i=0;$i<=$#from;$i++) {
+			   print OFFLINE "[".$from[$i]."]: ".$body[$i]."\n";
 		  }
-		  my $message = sprintf "[06;32m;[%s(%s)][06;36m %s [0m\n", $event->from,$nametonum{"$from"},$body;
-		  print $message."[0m";
+		  close(OFFLINE);
 	 }
+	 $first=1;
+# print "body$body from $from\n";
+	 for($i=0;$i<=$#from;$i++) {
+		  if ($body[$i] ne "") {
+			   $body[$i] =~ s{</?(?:font|FACE).+?>}{}g;
+			   if( ! defined $nametonum{"$from[$i]"} ) {
+					$nametonum{"$from[$i]"} = $count;
+					$numtoname{"$count"}=$from[$i];
+					$count++;
+			   }
+
+			   my $message = sprintf "[06;32m;[%s(%s)][06;36m %s [0m\n", $from[$i],$nametonum{"$from[$i]"},$body[$i];
+			   print $message."[0m";
+		  }
+	 }
+
 }
 
 1;

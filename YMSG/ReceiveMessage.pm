@@ -22,7 +22,14 @@ sub from
 	if ($self->_get_by_name('ERROR_MESSAGE')) {
 		return 'system';
 	}
-	$self->_get_by_name('FROM');
+	my $sender=$self->_get_by_name('FROM');
+	if($sender eq 'Multiple') {
+	my @mult_senders = $self->_get_multiple_by_name('FROM');
+	return join("\x80",@mult_senders);
+	} else {
+	return $sender;
+	}
+
 }
 
 
@@ -33,7 +40,14 @@ sub body
 	if ($self->_get_by_name('ERROR_MESSAGE')) {
 		return $self->_get_by_name('ERROR_MESSAGE');
 	}
-	$self->_get_by_name('MESSAGE');
+	my $mesg=$self->_get_by_name('MESSAGE');
+	if($mesg eq 'Multiple') {
+	my @mult_mesgs = $self->_get_multiple_by_name('MESSAGE');
+	return join("\x80",@mult_mesgs);
+	} else
+	{ return $mesg;
+	}
+
 }
 
 

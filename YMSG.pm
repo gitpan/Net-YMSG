@@ -2,7 +2,7 @@ package Net::YMSG;
 
 =head1 NAME
 
-Net::YMSG - Interface to the Yahoo!Messenger IM protocol
+Net::YMSG - Interface to the Yahoo! Messenger IM protocol
 
 =head1 SYNOPSIS
 
@@ -17,7 +17,7 @@ Net::YMSG - Interface to the Yahoo!Messenger IM protocol
 
 =head1 DESCRIPTION
 
-Net::YMSG is a client class for connecting with the Yahoo!Messenger server, and transmitting and receiving a message.
+Net::YMSG is a client class for connecting with the Yahoo! Messenger server, and transmitting and receiving a message.
 
 Since implement of a protocol is the result of analyzing and investigating a packet, it has an inadequate place. However, it is working as expected usually.
 
@@ -36,7 +36,7 @@ use constant YMSG_SALT       => '_2S43d5f';
 use strict;
 
 use vars qw($VERSION);
-$VERSION = '0.13';
+$VERSION = '1.2';
 
 =head1 METHODS
 
@@ -51,15 +51,15 @@ It should be called with following arguments (items with default value are optio
 	pre_login_url => url which refers to setting information.
 	                 (default http://msg.edit.yahoo.com/config/)
 	hostname      => server hostname
-	                 (default 'cs.yahoo.com)
+	                 (default 'scs.yahoo.com)
 
 Returns a blessed instantiation of Net::YMSG.
 
-Note: If you plan to connect with Yahoo!Japan(yahoo.co.jp), it sets up as follows.
+Note: If you plan to connect with Yahoo!India (yahoo.co.in), it sets up as follows.
 
 	my $yahoo_japan = Net::YMSG->new(
-		pre_login_url => 'http://edit.my.yahoo.co.jp/config/',
-		hostname      => 'cs.yahoo.co.jp',
+		pre_login_url => 'http://edit.my.yahoo.co.in/config/',
+		hostname      => 'cs.yahoo.co.in',
 	);
 
 I<Since it connects with Yahoo!(yahoo.com), this procedure is unnecessary in almost all countries.>
@@ -74,7 +74,7 @@ sub new
 	bless {
 		id       => $args{id},
 		password => $args{password},
-		hostname => $args{hostname} || 'cs.yahoo.com',
+		hostname => $args{hostname} || 'scs.yahoo.com',
 		pre_login_url     => $args{pre_login_url} || 'http://msg.edit.yahoo.com/config/',
 		handle   => undef,
 		_read    => IO::Select->new,
@@ -174,8 +174,7 @@ sub _dump_packet
 
 =head2 $yahoo->send($yahoo_id, $message)
 
-This method send an Instant-Message C<$message> to the user specified by C<$yahoo_id>. A kanji code is Shift_JIS when including Japanese in $message.
-
+This method send an Instant-Message B<$message> to the user specified by B<$yahoo_id>. 
 =cut
 
 sub send
@@ -194,7 +193,7 @@ sub send
 
 =head2 $yahoo->chatsend($chatroom, $message)
 
-This method send a Message C<$message> to the given C<$chatroom>.
+This method send a Message B<$message> to the given B<$chatroom>.
 
 =cut
 
@@ -293,6 +292,9 @@ The B<Event object> which will be returned is as follows:
 	Net::YMSG::ChangeState      - Buddy has change status.
 	Net::YMSG::GoesOffline      - Buddy logged out.
 	Net::YMSG::NewFriendAlert   - New Friend Alert.
+    Net::YMSG::ChatRoomLogon    - Log in chat room
+    Net::YMSG::ChatRoomReceive- Log in chat room
+    Net::YMSG::ChatRoomLogoff    - Log in chat room
 	Net::YMSG::UnImplementEvent - Un-implemented event was received.
 
 All event objects have the following attributes:
@@ -464,6 +466,12 @@ sub invisible {
 	$server->send($msg,0);
 	#return $msg;
 }
+=head2 $yahoo->invisible()
+
+This method makes you B<invisible> to other users..
+
+=cut
+
 
 sub pre_join {
 	my $self = shift;
@@ -522,7 +530,17 @@ sub join_room {
 	#print STDERR "Send $num bytes\n";
 	return $msg;
 	}
-	
+
+=head2 $yahoo->join_room($roomname,$roomid)
+
+This method logs you in B<$roomname>. You need to provide the B<$id> along with Roomname.
+Check out http://www.cse.iitb.ac.in/varunk/YahooProtocol.php for the list of RoomIDs corresponding
+to the Room you wish to join.[This is a comprehensive list and might not list all available rooms
+at that moment; Follow instructions to get the roomid of the room you wish to join]
+
+=cut
+
+
 sub logoffchat {
 	my $self=shift;
 	my $login=$self->{id};
@@ -545,6 +563,12 @@ sub logoffchat {
 	#print STDERR "Send $num bytes\n";
 	return $msg;
 }
+
+=head2 $yahoo->logoffchat()
+
+This method logs you off any chat rooms you are currently logged into.
+
+=cut
 
 sub get_port
 {
@@ -668,6 +692,48 @@ sub add_buddy_by_name
 1;
 __END__
 
+=head2 Receiving Offline Messages
+
+All offline messages would be displayed on login by declaring the B<Event_handler> of B<ReceiveMessage> as following :
+
+my $first=0;
+sub ReceiveMessage
+{
+	 my $self = shift;
+	 my $event = shift;
+	 my @from = split("\x80",$event->from);
+	 my @body = split("\x80",$event->body);
+	 my $i;
+	 if($first==0 && $#from >= 1) {
+# offline messages 
+		  print "Your Offline messages :\n[They have been saved in the file \'offline\' in the current directory]\n";
+		  open(OFFLINE,">>offline") || printf "Error opening file offline";
+		  for($i=0;$i<=$#from;$i++) {
+			   print OFFLINE "[".$from[$i]."]: ".$body[$i]."\n";
+		  }
+		  close(OFFLINE);
+	 }
+	 $first=1;
+	 for($i=0;$i<=$#from;$i++) {
+		  if ($body[$i] ne "") {
+			   $body[$i] =~ s{</?(?:font|FACE).+?>}{}g;
+			   if( ! defined $nametonum{"$from[$i]"} ) {
+					$nametonum{"$from[$i]"} = $count;
+					$numtoname{"$count"}=$from[$i];
+					$count++;
+			   }
+
+			   my $message = sprintf "[%s(%s)] %s \n", $from[$i],$nametonum{"$from[$i]"},$body[$i];
+			   print $message;
+		  }
+	 }
+
+}
+
+
+=cut
+
+
 =head1 EXAMPLE
 
 =head2 Send message
@@ -700,6 +766,22 @@ __END__
 	$yahoo->change_state(IN_BUSY, q{I'm very busy now!});
 	sleep 5;
 	__END__
+
+=head2 Become Invisible
+
+	#!perl
+	use Net::YMSG;
+	use strict;
+	
+	my $yahoo = Net::YMSG->new(
+		id       => 'yahoo_id',
+		password => 'password',
+	);
+	$yahoo->login or die "Can't login Yahoo!Messenger";;
+	
+	$yahoo->invisible();
+	__END__
+
 
 =head2 Received message output to STDOUT
 
@@ -741,19 +823,57 @@ __END__
 	use strict;
 	
 	my $yahoo = Net::YMSG->new(
-		pre_login_url => 'http://edit.my.yahoo.co.jp/config/',
-		hostname      => 'cs.yahoo.co.jp',
+		pre_login_url => 'http://edit.my.yahoo.co.in/config/',
+		hostname      => 'cs.yahoo.co.in',
 	);
 	$yahoo->id('yahoo_id');
 	$yahoo->password('password');
 	$yahoo->login or die "Can't login Yahoo!Messenger";
 	
-	$yahoo->send('recipient_yahoo_id', 'Konnitiwa Sekai!');
+	$yahoo->send('recipient_yahoo_id', 'Namaste!');
 	__END__
 
+=head2 Join Room 1 of Linux, FreeBSD, Solaris 
 
-This module is free software; you can redistribute it and/or modify it under the same terms as Perl itsefl.
+my $chatroom="Linux, FreeBSD, Solaris:1";
+my $chatroomcode="1600326591";
+my $message= "Hi Room!";
+	#!perl
+	use Net::YMSG;
+	use strict;
+	
+	my $yahoo = Net::YMSG->new(
+		id       => 'yahoo_id',
+		password => 'password',
+	);
+	$yahoo->login or die "Can't login Yahoo!Messenger";;
+# Join chat room C<$chatroom>    
+	my $msg = $yahoo->pre_join();	
+	my $msg=$yahoo->join_room($chatroom,$chatroomcode);
 
-Please refer to the use agreement of Yahoo! about use of the Yahoo!Messenger service.
+# Send message to chatroom	
+	$yahoo->chatsend($chatroom,$message);
+
+# Log off chatroom
+
+    $yahoo->logoffchat();
+	__END__
 
 =cut
+=cut
+=head1 AUTHOR
+  Varun Kacholia <varunk@cse.iitb.ac.in> http://www.cse.iitb.ac.in/varunk/  
+  Hiroyuki OYAMA <oyama@crayfish.co.jp>  http://ymca.infoware.ne.jp/
+ =cut
+
+=head1 See Also
+  C<http://www.cse.iitb.ac.in/varunk/YahooProtocol.php>
+=cut
+
+=COPYRIGHT
+Copyright (C) 2003 Varun Kacholia and Hiroyuki OYAMA. All rights reserved.
+This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+Please refer to the use agreement of Yahoo! about use of the Yahoo!Messenger service.
+=cut 
+

@@ -51,6 +51,25 @@ sub source
 	return $self->{source};
 }
 
+sub _get_multiple_by_name 
+{
+	 my $self = shift;
+	my $name = shift;
+	my $raw_event = $self->source;
+	return unless exists DATA_TYPE->{$name};
+	my @param = split /\xC0\x80/, $raw_event;
+	my @result;
+	for (my $i=0; $i < scalar @param; $i+=2) {
+		my $value_type = $param[$i];
+		next unless $value_type =~ /^\d+$/;
+		next if DATA_TYPE->{$name} != $value_type;
+		push @result, $param[$i+1];
+	}
+	return join("\x80",@result); 
+
+}
+
+
 
 sub _get_by_name
 {
@@ -67,8 +86,13 @@ sub _get_by_name
 		next if DATA_TYPE->{$name} != $value_type;
 		push @result, $param[$i+1];
 	}
-	return scalar @result <= 1 ?
+if((DATA_TYPE->{$name} == 14 || DATA_TYPE->{$name} == 4) && $#result >=1 ) {
+	return 'Multiple';
+	}
+	else {
+   return scalar @result <= 1 ?
 		$result[0] : @result;
+		}
 }
 
 
